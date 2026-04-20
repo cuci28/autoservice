@@ -1,0 +1,60 @@
+Полный чек по заказу
+
+SELECT 
+    o.order_id AS 'Заказ №',
+    c.full_name AS 'Клиент',
+    car.brand || ' ' || car.model AS 'Автомобиль',
+    m.full_name AS 'Мастер',
+    s.service_name AS 'Услуга',
+    os.price_at_time AS 'Цена'
+FROM orders o
+JOIN cars car ON o.car_id = car.car_id
+JOIN clients c ON car.client_id = c.client_id
+JOIN masters m ON o.master_id = m.master_id
+JOIN order_services os ON o.order_id = os.order_id
+JOIN services s ON os.service_id = s.service_id
+WHERE o.order_id = 1; -- Здесь можно подставить любой ID заказа
+
+Продажи по мастерам
+
+SELECT 
+    master_name AS 'Мастер',
+    COUNT(o.order_id) AS 'Количество заказов',
+    SUM(o.total_cost) AS 'Общая выручка'
+FROM masters m
+LEFT JOIN orders o ON m.master_id = o.master_id
+WHERE o.status = 'завершен'
+GROUP BY m.master_id
+ORDER BY 'Общая выручка' DESC;
+
+Самые популярные услуги
+
+SELECT 
+    s.service_name AS 'Услуга',
+    COUNT(os.service_id) AS 'Сколько раз оказана',
+    SUM(os.price_at_time) AS 'Общий доход с услуги'
+FROM services s
+JOIN order_services os ON s.service_id = os.service_id
+GROUP BY s.service_id
+ORDER BY 'Сколько раз оказана' DESC;
+
+Складской учет, что на складе заканчивается
+
+SELECT 
+    part_name AS 'Деталь',
+    stock_quantity AS 'Остаток'
+FROM warehouse
+WHERE stock_quantity < 5
+ORDER BY stock_quantity ASC;
+
+История машины в сервисе
+
+SELECT 
+    o.order_date AS 'Дата',
+    o.status AS 'Статус',
+    o.total_cost AS 'Сумма заказа',
+    master_name AS 'Кто обслуживал'
+FROM orders o
+JOIN masters m ON o.master_id = m.master_id
+WHERE o.car_id = 1 -- ID машины
+ORDER BY o.order_date DESC;

@@ -1,0 +1,150 @@
+
+CREATE TABLE IF NOT EXISTS clients (
+	client_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	full_name TEXT NOT NULL,
+	phone_number VARCHAR(11) NOT NULL UNIQUE,
+	email TEXT UNIQUE
+	CONSTRAINT email_check CHECK(email like '%@%.%')
+);
+
+INSERT INTO clients(full_name, phone_number, email) VALUES
+	("Гусенов Гази", "79886359835", "wyoris@ya.ru"),
+	("Мурлиев Дауд", "79886943008", "murlievdaud@gmail.com"),
+	("Тагиров Заур", "79634075415", "tagirovzaur@gmail.com");
+
+CREATE TABLE if NOT EXISTS cars (
+	car_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	client_id INTEGER,
+	car_model TEXT NOT NULL,
+	year INTEGER NOT NULL,
+	vin VARCHAR(17) NOT NULL UNIQUE,
+	FOREIGN KEY (client_id) REFERENCES clients(client_id) ON DELETE CASCADE
+);
+
+INSERT INTO cars (client_id, car_model, year, vin) VALUES
+	(1, "Hyundai Sonata LF", 2017, "19UUA66245A041728"),
+	(2, "Lada Priora", 2011, "V4ZD64OPJ8XO50534"),
+	(3, "Lada Vesta", 2019, "AHDDBNGYZYFB61970");
+	
+CREATE TABLE if NOT EXISTS services (
+	service_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	service_name TEXT NOT NULL UNIQUE,
+	price INTEGER NOT NULL
+);
+
+INSERT INTO services (service_name, price) VALUES
+("Замена масла в двигателе", 1000),
+("Замена передних тормозных колодок", 1500),
+("Компьютерная диагностика автомобиля", 1200),
+("Шиномонтаж и балансировка (4 колеса)", 2400),
+("Замена воздушного фильтра", 500),
+("Регулировка развал-схождения", 2000),
+("Замена свечей зажигания (комплект)", 1000),
+("Промывка топливной системы", 2500),
+("Замена ремня ГРМ", 7000),
+("Диагностика ходовой части", 800),
+("Заправка кондиционера", 2500),
+("Замена охлаждающей жидкости", 1200),
+("Чистка дроссельной заслонки", 1500),
+("Замена ламп головного света", 600),
+("Ремонт генератора", 4000);
+
+CREATE TABLE if NOT EXISTS masters (
+	master_id INTEGER PRIMARY KEY AUTOINCREMENT,
+	master_name TEXT NOT NULL,
+	phone_number varchar(11) NOT NULL UNIQUE,
+	email TEXT UNIQUE,
+	hire_date date DEFAULT CURRENT_DATE
+	CONSTRAINT email_check CHECK(email like '%@%.%')
+);
+
+INSERT INTO masters (master_name, phone_number, email, hire_date) VALUES
+	("мастер1", 79990000000, "master1@gmail.com", date('now')),
+	("мастер2", 79990000001, "master2@gmail.com", date('now')),
+	("мастер3", 79990000002, "master3@gmail.com", date('now')),
+	("мастер4", 79990000003, "master4@gmail.com", date('now')),
+	("мастер5", 79990000004, "master5@gmail.com", date('now'));
+
+CREATE TABLE if NOT EXISTS warehouse (
+	part_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    part_name TEXT UNIQUE NOT NULL,
+    stock_quantity INTEGER DEFAULT 0,
+    unit_price INTEGER NOT NULL
+);
+
+INSERT INTO warehouse (part_name, stock_quantity, unit_price) VALUES
+("Фильтр масляный", 25, 600),
+("Фильтр воздушный", 15, 950),
+("Колодки тормозные передние", 10, 2800),
+("Свечи зажигания (комплект 4 шт)", 20, 1800),
+("Масло моторное 5W-30 (4л)", 12, 4500),
+("Антифриз (5л)", 8, 1600),
+("Ремень ГРМ", 5, 3500),
+("Щетки стеклоочистителя (комплект)", 14, 1300),
+("Фильтр салонный", 18, 850),
+("Лампа головного света H7", 30, 450),
+("Тормозная жидкость (1л)", 10, 900),
+("Фильтр топливный", 7, 2100),
+("Ремень приводной", 6, 1250),
+("Аккумулятор 60Ah", 4, 7200),
+("Ступичный подшипник", 8, 3100);
+
+CREATE TABLE if NOT EXISTS orders (
+    order_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    car_id INTEGER,
+    order_date TEXT DEFAULT (date('now')),
+    status TEXT DEFAULT 'в работе',
+    total_cost INTEGER DEFAULT 0,
+	master_id INTEGER,
+    FOREIGN KEY (car_id) REFERENCES cars(car_id),
+	FOREIGN KEY (master_id) REFERENCES masters(master_id)
+);
+CREATE TABLE order_parts (
+    order_id INTEGER,
+    part_id INTEGER,
+    quantity INTEGER NOT NULL,
+    FOREIGN KEY (order_id) REFERENCES orders(order_id),
+    FOREIGN KEY (part_id) REFERENCES warehouse(part_id)
+);
+CREATE TABLE order_services (
+    order_id INTEGER,
+    service_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    price_at_time INTEGER,
+    PRIMARY KEY (order_id, service_id),
+    FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE,
+    FOREIGN KEY (service_id) REFERENCES services(service_id)
+);
+
+
+CREATE TRIGGER update_stock_after_sale
+AFTER INSERT ON order_parts
+BEGIN
+    UPDATE warehouse
+    SET stock_quantity = stock_quantity - NEW.quantity
+    WHERE part_id = NEW.part_id;
+END;
+
+CREATE TRIGGER restore_stock_after_delete
+AFTER DELETE ON order_parts
+BEGIN
+    UPDATE warehouse
+    SET stock_quantity = stock_quantity + OLD.quantity
+    WHERE part_id = OLD.part_id;
+END;
+
+
+insert into orders(car_id, total_cost, master_id) VALUES
+(1, 6100, 1),
+(2, 2000, 2),
+(3, 2800, 3);
+
+INSERT INTO order_parts (order_id, part_id, quantity) VALUES
+(1, 5, 1),
+(1, 1, 1),
+(3, 4, 1);
+
+insert into order_services (order_id, service_id, price_at_time) VALUES
+(1, 1, 1000),
+(2, 6, 2000),
+(3, 7, 1000);
