@@ -51,6 +51,22 @@ async function deleteJson(url) {
   return data;
 }
 
+async function patchJson(url, payload) {
+  const response = await fetch(url, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || data.details || 'Ошибка запроса');
+  }
+  return data;
+}
+
 function initSimpleForm(formId, endpoint, payloadBuilder, afterSuccess) {
   const form = document.getElementById(formId);
   if (!form) {
@@ -187,6 +203,48 @@ function initMasterDeletion() {
   });
 }
 
+function initPartEditing() {
+  document.querySelectorAll('[data-edit-part]').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const partId = Number(button.dataset.editPart);
+      const currentName = button.dataset.partName || '';
+      const currentPrice = button.dataset.unitPrice || '';
+
+      const nextName = window.prompt('Новое название запчасти:', currentName);
+      if (nextName === null) {
+        return;
+      }
+
+      const nextPriceRaw = window.prompt('Новая цена за единицу:', currentPrice);
+      if (nextPriceRaw === null) {
+        return;
+      }
+
+      const nextPrice = Number(nextPriceRaw);
+      if (!nextName.trim()) {
+        alert('Название не может быть пустым');
+        return;
+      }
+      if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
+        alert('Цена должна быть числом больше нуля');
+        return;
+      }
+
+      try {
+        await patchJson(`/api/warehouse/parts/${partId}`, {
+          part_name: nextName.trim(),
+          unit_price: nextPrice,
+        });
+      } catch (error) {
+        alert(error.message);
+        return;
+      }
+
+      window.location.reload();
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initSimpleForm('client-form', '/api/clients-with-car', (form) => ({
     full_name: form.querySelector('[name="full_name"]').value.trim(),
@@ -210,6 +268,12 @@ document.addEventListener('DOMContentLoaded', () => {
     quantity: Number(form.querySelector('[name="quantity"]').value),
   }), () => window.location.reload());
 
+  initSimpleForm('warehouse-new-part-form', '/api/warehouse/parts', (form) => ({
+    part_name: form.querySelector('[name="part_name"]').value.trim(),
+    stock_quantity: Number(form.querySelector('[name="stock_quantity"]').value),
+    unit_price: Number(form.querySelector('[name="unit_price"]').value),
+  }), () => window.location.reload());
+
   initSimpleForm('warehouse-writeoff-form', '/api/warehouse/writeoff', (form) => ({
     part_id: Number(form.querySelector('[name="part_id"]').value),
     quantity: Number(form.querySelector('[name="quantity"]').value),
@@ -217,4 +281,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   initOrderForm();
   initMasterDeletion();
+  initPartEditing();
 });

@@ -316,12 +316,91 @@ def writeoff_warehouse_part():
     return jsonify({'message': 'Списание выполнено'})
 
 
-@api.route('/api/warehouse/parts', methods=['GET'])
+@api.route('/api/warehouse/parts', methods=['GET', 'POST'])
 def list_parts():
-    """Возвращает список запчастей со склада."""
+    """Возвращает список запчастей или добавляет новую позицию на склад."""
     tables = get_tables()
+
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        ok, error = require_fields(payload, ['part_name', 'unit_price'])
+        if not ok:
+            return jsonify(error), 400
+
+        try:
+            stock_quantity = int(payload.get('stock_quantity', 0))
+            unit_price = int(payload['unit_price'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Количество и цена должны быть числами'}), 400
+
+        if stock_quantity < 0:
+            return jsonify({'error': 'Начальный остаток не может быть отрицательным'}), 400
+        if unit_price <= 0:
+            return jsonify({'error': 'Цена должна быть больше нуля'}), 400
+
+        try:
+            with db.session.begin():
+                result = db.session.execute(
+                    insert(tables['warehouse']).values(
+                        part_name=payload['part_name'].strip(),
+                        stock_quantity=stock_quantity,
+                        unit_price=unit_price,
+                    )
+                )
+                part_id = result.inserted_primary_key[0]
+        except IntegrityError as ex:
+            db.session.rollback()
+            return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+        return jsonify({'message': 'Запчасть добавлена', 'part_id': part_id}), 201
+
     rows = db.session.execute(select(tables['warehouse'])).mappings().all()
     return jsonify([dict(row) for row in rows])
+
+
+@api.route('/api/warehouse/parts/<int:part_id>', methods=['PATCH'])
+def update_part(part_id):
+    """Обновляет название и/или цену запчасти на складе."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+
+    part_name = payload.get('part_name')
+    unit_price = payload.get('unit_price')
+
+    if part_name is None and unit_price is None:
+        return jsonify({'error': 'Нужно передать part_name и/или unit_price'}), 400
+
+    values_to_update = {}
+    if part_name is not None:
+        cleaned_name = str(part_name).strip()
+        if not cleaned_name:
+            return jsonify({'error': 'Название запчасти не может быть пустым'}), 400
+        values_to_update['part_name'] = cleaned_name
+
+    if unit_price is not None:
+        try:
+            parsed_price = int(unit_price)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Цена должна быть числом'}), 400
+        if parsed_price <= 0:
+            return jsonify({'error': 'Цена должна быть больше нуля'}), 400
+        values_to_update['unit_price'] = parsed_price
+
+    try:
+        with db.session.begin():
+            result = db.session.execute(
+                update(tables['warehouse'])
+                .where(tables['warehouse'].c.part_id == part_id)
+                .values(**values_to_update)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Запчасть не найдена'}), 404
+
+    return jsonify({'message': 'Запчасть обновлена'})
 
 
 @api.route('/api/services', methods=['GET'])

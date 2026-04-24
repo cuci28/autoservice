@@ -13,6 +13,17 @@
 
 <section class="grid-two">
   <article class="panel">
+    <h2>Новая запчасть</h2>
+    <form id="warehouse-new-part-form" class="stack-form" data-success-text="Запчасть добавлена">
+      <label>Название запчасти<input name="part_name" required></label>
+      <label>Начальный остаток<input name="stock_quantity" type="number" min="0" value="0" required></label>
+      <label>Цена за единицу<input name="unit_price" type="number" min="1" required></label>
+      <button class="button button-primary" type="submit">Добавить в справочник</button>
+      <div class="form-message" data-message></div>
+    </form>
+
+    <hr>
+
     <h2>Поступление на склад</h2>
     <form id="warehouse-form" class="stack-form" data-success-text="Поступление учтено">
       <label>ID запчасти<input name="part_id" type="number" required></label>
@@ -36,7 +47,7 @@
     <h2>Текущее наличие</h2>
     <div class="table-wrap table-wrap--compact">
       <table>
-        <thead><tr><th>ID</th><th>Запчасть</th><th>Остаток</th><th>Цена</th></tr></thead>
+        <thead><tr><th>ID</th><th>Запчасть</th><th>Остаток</th><th>Цена</th><th></th></tr></thead>
         <tbody>
           {% for part in parts %}
           <tr>
@@ -44,9 +55,17 @@
             <td>{{ part.part_name }}</td>
             <td>{{ part.stock_quantity }}</td>
             <td>{{ part.unit_price }}</td>
+            <td>
+              <button
+                class="button button-secondary button-small"
+                data-edit-part="{{ part.part_id }}"
+                data-part-name="{{ part.part_name }}"
+                data-unit-price="{{ part.unit_price }}"
+              >Изменить</button>
+            </td>
           </tr>
           {% else %}
-          <tr><td colspan="4" class="empty">Склад пуст</td></tr>
+          <tr><td colspan="5" class="empty">Склад пуст</td></tr>
           {% endfor %}
         </tbody>
       </table>
