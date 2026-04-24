@@ -219,6 +219,35 @@ def add_items_to_order(order_id):
     return jsonify({'message': 'Позиции добавлены', 'total_cost': total})
 
 
+ALLOWED_STATUSES = {'в работе', 'завершен', 'отменен'}
+
+
+@api.route('/api/orders/<int:order_id>/status', methods=['PATCH'])
+def update_order_status(order_id):
+    """Изменяет статус заказа."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+    status = payload.get('status')
+
+    if not status:
+        return jsonify({'error': 'Нужно передать status'}), 400
+
+    if status not in ALLOWED_STATUSES:
+        return jsonify({'error': f"Недопустимый статус. Допустимые значения: {', '.join(sorted(ALLOWED_STATUSES))}"}), 400
+
+    with db.session.begin():
+        result = db.session.execute(
+            update(tables['orders'])
+            .where(tables['orders'].c.order_id == order_id)
+            .values(status=status)
+        )
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Заказ не найден'}), 404
+
+    return jsonify({'message': 'Статус обновлен'})
+
+
 @api.route('/api/orders/<int:order_id>/master', methods=['PATCH'])
 def assign_master(order_id):
     """Назначает мастера на заказ."""

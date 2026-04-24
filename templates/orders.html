@@ -32,13 +32,23 @@
       </thead>
       <tbody>
         {% for order in orders %}
-        <tr>
+        <tr class="order-row" data-order-id="{{ order.order_id }}">
           <td>{{ order.order_id }}</td>
           <td>{{ order.full_name }}</td>
           <td>{{ order.car_model }}</td>
           <td>{{ order.master_name or 'Не назначен' }}</td>
           <td>{{ order.order_date }}</td>
-          <td>{{ order.status }}</td>
+          <td>
+            <div class="status-cell">
+              <select class="order-status-select" data-original="{{ order.status }}">
+                <option value="в работе" {% if order.status == 'в работе' %}selected{% endif %}>в работе</option>
+                <option value="завершен" {% if order.status == 'завершен' %}selected{% endif %}>завершен</option>
+                <option value="отменен" {% if order.status == 'отменен' %}selected{% endif %}>отменен</option>
+              </select>
+              <button class="button button-small button-primary order-status-save is-hidden">Сохранить</button>
+              <span class="order-status-msg"></span>
+            </div>
+          </td>
           <td>{{ order.total_cost }}</td>
           <td><a class="inline-link" href="{{ url_for('ui.receipt_page', order_id=order.order_id) }}">Чек</a></td>
         </tr>
