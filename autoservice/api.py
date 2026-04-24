@@ -23,7 +23,7 @@ def get_tables():
     return current_app.extensions['autoservice_tables']
 
 
-@api.route('/')
+@api.route('/api')
 def index():
     """Служебный маршрут: проверка доступности API и список основных endpoint'ов."""
     return jsonify(
@@ -278,6 +278,42 @@ def add_warehouse_income():
         return jsonify({'error': 'Запчасть не найдена'}), 404
 
     return jsonify({'message': 'Поступление учтено'})
+
+
+@api.route('/api/warehouse/writeoff', methods=['POST'])
+def writeoff_warehouse_part():
+    """Списывает запчасти со склада с проверкой остатка."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+    ok, error = require_fields(payload, ['part_id', 'quantity'])
+    if not ok:
+        return jsonify(error), 400
+
+    quantity = int(payload['quantity'])
+    if quantity <= 0:
+        return jsonify({'error': 'Количество должно быть больше нуля'}), 400
+
+    part_row = db.session.execute(
+        select(
+            tables['warehouse'].c.part_id,
+            tables['warehouse'].c.stock_quantity,
+        ).where(tables['warehouse'].c.part_id == payload['part_id'])
+    ).mappings().first()
+
+    if not part_row:
+        return jsonify({'error': 'Запчасть не найдена'}), 404
+
+    if part_row['stock_quantity'] < quantity:
+        return jsonify({'error': 'Недостаточно запчастей на складе для списания'}), 400
+
+    with db.session.begin():
+        db.session.execute(
+            update(tables['warehouse'])
+            .where(tables['warehouse'].c.part_id == payload['part_id'])
+            .values(stock_quantity=tables['warehouse'].c.stock_quantity - quantity)
+        )
+
+    return jsonify({'message': 'Списание выполнено'})
 
 
 @api.route('/api/warehouse/parts', methods=['GET'])

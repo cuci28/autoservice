@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Новый заказ{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Создание заказа</p>
+    <h1>Соберите заказ из услуг и запчастей</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.orders_page') }}">К заказам</a>
+</section>
+
+<section class="panel panel-spaced">
+  <form id="order-form" class="stack-form order-form" data-success-text="Заказ создан">
+    <div class="field-grid">
+      <label>Машина
+        <select name="car_id" required>
+          <option value="">Выберите машину</option>
+          {% for car in cars %}
+          <option value="{{ car.car_id }}">{{ car.full_name }} · {{ car.car_model }} · {{ car.year }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>Мастер
+        <select name="master_id">
+          <option value="">Не назначен</option>
+          {% for master in masters %}
+          <option value="{{ master.master_id }}">{{ master.master_name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+
+    <div class="order-grid">
+      <section class="selection-card">
+        <div class="panel-header">
+          <h2>Услуги</h2>
+          <span>Количество можно менять</span>
+        </div>
+        <div class="choice-list">
+          {% for service in services %}
+          <label class="choice-item">
+            <input type="checkbox" class="service-check" data-id="{{ service.service_id }}" data-price="{{ service.price }}" data-name="{{ service.service_name }}">
+            <span>
+              <strong>{{ service.service_name }}</strong>
+              <small>{{ service.price }} ₽</small>
+            </span>
+            <input type="number" min="1" value="1" class="choice-qty" data-kind="service" disabled>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="selection-card">
+        <div class="panel-header">
+          <h2>Запчасти</h2>
+          <span>Списание по складу</span>
+        </div>
+        <div class="choice-list">
+          {% for part in parts %}
+          <label class="choice-item">
+            <input type="checkbox" class="part-check" data-id="{{ part.part_id }}" data-price="{{ part.unit_price }}" data-name="{{ part.part_name }}" data-stock="{{ part.stock_quantity }}">
+            <span>
+              <strong>{{ part.part_name }}</strong>
+              <small>{{ part.unit_price }} ₽ · остаток {{ part.stock_quantity }}</small>
+            </span>
+            <input type="number" min="1" value="1" class="choice-qty" data-kind="part" disabled>
+          </label>
+          {% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div class="order-summary">
+      <div>
+        <span>Предварительная сумма</span>
+        <strong id="order-total">0 ₽</strong>
+      </div>
+      <button class="button button-primary" type="submit">Создать заказ</button>
+    </div>
+    <div class="form-message" data-message></div>
+  </form>
+</section>
+{% endblock %}

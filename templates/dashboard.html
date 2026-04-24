@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Главная{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <div>
+    <p class="eyebrow">AutoService</p>
+    <h1>Панель управления автосервисом</h1>
+    <p class="hero-text">Создавайте клиентов и машины, управляйте заказами, мастерами и складом из одного рабочего места.</p>
+  </div>
+  <div class="hero-actions">
+    <a class="button button-primary" href="{{ url_for('ui.new_order_page') }}">Создать заказ</a>
+    <a class="button button-secondary" href="{{ url_for('ui.clients_page') }}">Добавить клиента</a>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <article class="stat-card"><span>Клиенты</span><strong>{{ stats.clients }}</strong></article>
+  <article class="stat-card"><span>Машины</span><strong>{{ stats.cars }}</strong></article>
+  <article class="stat-card"><span>Заказы</span><strong>{{ stats.orders }}</strong></article>
+  <article class="stat-card"><span>Мастера</span><strong>{{ stats.masters }}</strong></article>
+  <article class="stat-card"><span>Запчасти</span><strong>{{ stats.parts }}</strong></article>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Последние заказы</h2>
+    <a href="{{ url_for('ui.orders_page') }}">Все заказы</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Клиент</th>
+          <th>Машина</th>
+          <th>Мастер</th>
+          <th>Статус</th>
+          <th>Сумма</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in recent_orders %}
+        <tr>
+          <td>{{ order.order_id }}</td>
+          <td>{{ order.full_name }}</td>
+          <td>{{ order.car_model }}</td>
+          <td>{{ order.master_name or 'Не назначен' }}</td>
+          <td>{{ order.status }}</td>
+          <td>{{ order.total_cost }}</td>
+          <td><a class="inline-link" href="{{ url_for('ui.receipt_page', order_id=order.order_id) }}">Чек</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="empty">Пока нет заказов</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

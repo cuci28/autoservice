@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Склад{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Склад</p>
+    <h1>Поступления и остатки</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.dashboard') }}">На главную</a>
+</section>
+
+<section class="grid-two">
+  <article class="panel">
+    <h2>Поступление на склад</h2>
+    <form id="warehouse-form" class="stack-form" data-success-text="Поступление учтено">
+      <label>ID запчасти<input name="part_id" type="number" required></label>
+      <label>Количество<input name="quantity" type="number" required></label>
+      <button class="button button-primary" type="submit">Добавить</button>
+      <div class="form-message" data-message></div>
+    </form>
+
+    <hr>
+
+    <h2>Списание со склада</h2>
+    <form id="warehouse-writeoff-form" class="stack-form" data-success-text="Списание выполнено">
+      <label>ID запчасти<input name="part_id" type="number" required></label>
+      <label>Количество<input name="quantity" type="number" required></label>
+      <button class="button button-danger" type="submit">Списать</button>
+      <div class="form-message" data-message></div>
+    </form>
+  </article>
+
+  <article class="panel">
+    <h2>Текущее наличие</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>ID</th><th>Запчасть</th><th>Остаток</th><th>Цена</th></tr></thead>
+        <tbody>
+          {% for part in parts %}
+          <tr>
+            <td>{{ part.part_id }}</td>
+            <td>{{ part.part_name }}</td>
+            <td>{{ part.stock_quantity }}</td>
+            <td>{{ part.unit_price }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Склад пуст</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+{% endblock %}

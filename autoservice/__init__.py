@@ -5,14 +5,20 @@ from flask import Flask
 from .api import api
 from .extensions import db
 from .store import init_tables
+from .ui import ui
 
 
 def create_app():
     """Фабрика Flask-приложения: конфиг, БД, таблицы и маршруты."""
-    app = Flask(__name__)
+    project_root = Path(__file__).resolve().parent.parent
+    app = Flask(
+        __name__,
+        template_folder=str(project_root / 'templates'),
+        static_folder=str(project_root / 'static'),
+    )
 
     # Явно указываем БД в корне проекта
-    db_path = Path(__file__).resolve().parent.parent / 'autoservice.db'
+    db_path = project_root / 'autoservice.db'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path.as_posix()}'
     # Отключаем лишние сигналы отслеживания изменений объектов.
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -26,4 +32,6 @@ def create_app():
 
     # Регистрируем все API-роуты.
     app.register_blueprint(api)
+    # Регистрируем веб-интерфейс на HTML-шаблонах.
+    app.register_blueprint(ui)
     return app

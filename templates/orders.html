@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Заказы{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Заказы</p>
+    <h1>Список заказов и переход к созданию</h1>
+  </div>
+  <a class="button button-primary" href="{{ url_for('ui.new_order_page') }}">Новый заказ</a>
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Все заказы</h2>
+    <p>Откройте чек по нужному заказу</p>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Клиент</th>
+          <th>Машина</th>
+          <th>Мастер</th>
+          <th>Дата</th>
+          <th>Статус</th>
+          <th>Сумма</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+        <tr>
+          <td>{{ order.order_id }}</td>
+          <td>{{ order.full_name }}</td>
+          <td>{{ order.car_model }}</td>
+          <td>{{ order.master_name or 'Не назначен' }}</td>
+          <td>{{ order.order_date }}</td>
+          <td>{{ order.status }}</td>
+          <td>{{ order.total_cost }}</td>
+          <td><a class="inline-link" href="{{ url_for('ui.receipt_page', order_id=order.order_id) }}">Чек</a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="empty">Заказов пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

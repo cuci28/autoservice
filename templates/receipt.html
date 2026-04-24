@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Чек{% endblock %}
+
+{% block content %}
+{% if receipt %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Чек заказа #{{ receipt.order.order_id }}</p>
+    <h1>Печатная форма заказа</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.orders_page') }}">Назад к заказам</a>
+</section>
+
+<section class="receipt-layout">
+  <article class="panel receipt-card">
+    <h2>Данные заказа</h2>
+    <dl class="receipt-meta">
+      <div><dt>Дата</dt><dd>{{ receipt.order.order_date }}</dd></div>
+      <div><dt>Статус</dt><dd>{{ receipt.order.status }}</dd></div>
+      <div><dt>Клиент</dt><dd>{{ receipt.order.full_name }}</dd></div>
+      <div><dt>Телефон</dt><dd>{{ receipt.order.phone_number }}</dd></div>
+      <div><dt>Машина</dt><dd>{{ receipt.order.car_model }}</dd></div>
+      <div><dt>VIN</dt><dd>{{ receipt.order.vin }}</dd></div>
+      <div><dt>Мастер</dt><dd>{{ receipt.order.master_name or 'Не назначен' }}</dd></div>
+      <div><dt>Итог</dt><dd class="receipt-total">{{ receipt.order.total_cost }} ₽</dd></div>
+    </dl>
+  </article>
+
+  <article class="panel receipt-card">
+    <h2>Услуги</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>Услуга</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead>
+        <tbody>
+          {% for item in receipt.services %}
+          <tr>
+            <td>{{ item.service_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.price_at_time }}</td>
+            <td>{{ item.line_total }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Услуг нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <article class="panel receipt-card receipt-card--full">
+    <h2>Запчасти</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>Запчасть</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead>
+        <tbody>
+          {% for item in receipt.parts %}
+          <tr>
+            <td>{{ item.part_name }}</td>
+            <td>{{ item.quantity }}</td>
+            <td>{{ item.unit_price }}</td>
+            <td>{{ item.line_total }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Запчастей нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+{% else %}
+<section class="panel empty-state">
+  <p class="eyebrow">Чек не найден</p>
+  <h1>Заказ #{{ order_id }} отсутствует</h1>
+  <a class="button button-primary" href="{{ url_for('ui.orders_page') }}">К списку заказов</a>
+</section>
+{% endif %}
+{% endblock %}

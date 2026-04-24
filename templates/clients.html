@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Клиенты{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Клиенты и машины</p>
+    <h1>Добавление клиента с автомобилем</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.dashboard') }}">На главную</a>
+</section>
+
+<section class="grid-two">
+  <article class="panel">
+    <h2>Новый клиент</h2>
+    <form id="client-form" class="stack-form" data-success-text="Клиент добавлен">
+      <div class="field-grid">
+        <label>ФИО<input name="full_name" required></label>
+        <label>Телефон<input name="phone_number" required></label>
+      </div>
+      <label>Email<input name="email" type="email"></label>
+      <div class="field-grid">
+        <label>Марка/модель<input name="car_model" required></label>
+        <label>Год<input name="year" type="number" required></label>
+      </div>
+      <label>VIN<input name="vin" maxlength="17" required></label>
+      <button class="button button-primary" type="submit">Сохранить</button>
+      <div class="form-message" data-message></div>
+    </form>
+  </article>
+
+  <article class="panel">
+    <h2>Клиенты в базе</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>ID</th><th>ФИО</th><th>Телефон</th><th>Email</th></tr></thead>
+        <tbody>
+          {% for client in clients %}
+          <tr>
+            <td>{{ client.client_id }}</td>
+            <td>{{ client.full_name }}</td>
+            <td>{{ client.phone_number }}</td>
+            <td>{{ client.email or '—' }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Клиентов пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+
+<section class="panel panel-spaced">
+  <h2>Машины клиентов</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ID</th><th>Клиент</th><th>Модель</th><th>Год</th><th>VIN</th></tr></thead>
+      <tbody>
+        {% for car in cars %}
+        <tr>
+          <td>{{ car.car_id }}</td>
+          <td>{{ car.full_name }}</td>
+          <td>{{ car.car_model }}</td>
+          <td>{{ car.year }}</td>
+          <td>{{ car.vin }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="empty">Машин пока нет</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

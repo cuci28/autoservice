@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Мастера{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Мастера</p>
+    <h1>Управление сотрудниками</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.dashboard') }}">На главную</a>
+</section>
+
+<section class="grid-two">
+  <article class="panel">
+    <h2>Добавить мастера</h2>
+    <form id="master-form" class="stack-form" data-success-text="Мастер добавлен">
+      <label>Имя мастера<input name="master_name" required></label>
+      <label>Телефон<input name="phone_number" required></label>
+      <label>Email<input name="email" type="email"></label>
+      <button class="button button-primary" type="submit">Сохранить</button>
+      <div class="form-message" data-message></div>
+    </form>
+  </article>
+
+  <article class="panel">
+    <h2>Список мастеров</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>ID</th><th>Имя</th><th>Телефон</th><th>Email</th><th></th></tr></thead>
+        <tbody>
+          {% for master in masters %}
+          <tr>
+            <td>{{ master.master_id }}</td>
+            <td>{{ master.master_name }}</td>
+            <td>{{ master.phone_number }}</td>
+            <td>{{ master.email or '—' }}</td>
+            <td><button class="button button-danger button-small" data-delete-master="{{ master.master_id }}">Удалить</button></td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" class="empty">Мастеров пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+{% endblock %}

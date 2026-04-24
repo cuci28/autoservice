@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}AutoService{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script defer src="{{ url_for('static', filename='app.js') }}"></script>
+</head>
+<body>
+  <div class="page-shell">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">AutoService</div>
+        <p class="brand-subtitle">Управление автосервисом</p>
+      </div>
+
+      <nav class="nav">
+        <a href="{{ url_for('ui.dashboard') }}" class="nav-link">Главная</a>
+        <a href="{{ url_for('ui.clients_page') }}" class="nav-link">Клиенты</a>
+        <a href="{{ url_for('ui.orders_page') }}" class="nav-link">Заказы</a>
+        <a href="{{ url_for('ui.new_order_page') }}" class="nav-link nav-link--accent">Новый заказ</a>
+        <a href="{{ url_for('ui.masters_page') }}" class="nav-link">Мастера</a>
+        <a href="{{ url_for('ui.warehouse_page') }}" class="nav-link">Склад</a>
+        <a href="{{ url_for('api.index') }}" class="nav-link">API</a>
+      </nav>
+    </aside>
+
+    <main class="content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</body>
+</html>
