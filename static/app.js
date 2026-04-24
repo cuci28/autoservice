@@ -279,6 +279,41 @@ function initPartEditing() {
   });
 }
 
+function initOrderStatusChange() {
+  document.querySelectorAll('.order-row').forEach((row) => {
+    const orderId = row.dataset.orderId;
+    const select = row.querySelector('.order-status-select');
+    const saveBtn = row.querySelector('.order-status-save');
+    const msgEl = row.querySelector('.order-status-msg');
+
+    if (!orderId || !select || !saveBtn || !msgEl) {
+      return;
+    }
+
+    select.addEventListener('change', () => {
+      const changed = select.value !== select.dataset.original;
+      saveBtn.classList.toggle('is-hidden', !changed);
+      msgEl.textContent = '';
+      msgEl.classList.remove('is-success', 'is-error');
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      try {
+        await patchJson(`/api/orders/${orderId}/status`, { status: select.value });
+        select.dataset.original = select.value;
+        saveBtn.classList.add('is-hidden');
+        msgEl.textContent = 'Сохранено';
+        msgEl.classList.add('is-success');
+        msgEl.classList.remove('is-error');
+      } catch (error) {
+        msgEl.textContent = error.message;
+        msgEl.classList.add('is-error');
+        msgEl.classList.remove('is-success');
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initSimpleForm('client-form', '/api/clients-with-car', (form) => ({
     full_name: form.querySelector('[name="full_name"]').value.trim(),
@@ -316,4 +351,5 @@ document.addEventListener('DOMContentLoaded', () => {
   initOrderForm();
   initMasterDeletion();
   initPartEditing();
+  initOrderStatusChange();
 });
