@@ -162,7 +162,7 @@ def create_order():
 
     try:
         # Все операции по заказу выполняются атомарно.
-        with db.session.begin():
+        with db.session.begin_nested():
             order_result = db.session.execute(
                 insert(tables['orders']).values(
                     car_id=payload['car_id'],
@@ -205,7 +205,7 @@ def add_items_to_order(order_id):
 
     try:
         # После добавления позиций всегда обновляем total_cost.
-        with db.session.begin():
+        with db.session.begin_nested():
             add_services_to_order(tables, order_id, services_payload)
             add_parts_to_order(tables, order_id, parts_payload)
             total = recalculate_order_total(tables, order_id)
@@ -232,7 +232,7 @@ def assign_master(order_id):
     if not ensure_master_exists(tables, master_id):
         return jsonify({'error': 'Мастер не найден'}), 404
 
-    with db.session.begin():
+    with db.session.begin_nested():
         result = db.session.execute(
             update(tables['orders'])
             .where(tables['orders'].c.order_id == order_id)
@@ -306,7 +306,7 @@ def writeoff_warehouse_part():
     if part_row['stock_quantity'] < quantity:
         return jsonify({'error': 'Недостаточно запчастей на складе для списания'}), 400
 
-    with db.session.begin():
+    with db.session.begin_nested():
         db.session.execute(
             update(tables['warehouse'])
             .where(tables['warehouse'].c.part_id == payload['part_id'])
