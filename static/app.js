@@ -204,24 +204,56 @@ function initMasterDeletion() {
 }
 
 function initPartEditing() {
-  document.querySelectorAll('[data-edit-part]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      const partId = Number(button.dataset.editPart);
-      const currentName = button.dataset.partName || '';
-      const currentPrice = button.dataset.unitPrice || '';
+  document.querySelectorAll('.part-row').forEach((row) => {
+    const partId = Number(row.dataset.partId);
+    const nameText = row.querySelector('.part-name-text');
+    const nameInput = row.querySelector('.part-name-input');
+    const priceText = row.querySelector('.part-price-text');
+    const priceInput = row.querySelector('.part-price-input');
+    const editBtn = row.querySelector('.part-edit-btn');
+    const saveBtn = row.querySelector('.part-save-btn');
+    const cancelBtn = row.querySelector('.part-cancel-btn');
 
-      const nextName = window.prompt('Новое название запчасти:', currentName);
-      if (nextName === null) {
-        return;
-      }
+    if (!partId || !nameText || !nameInput || !priceText || !priceInput || !editBtn || !saveBtn || !cancelBtn) {
+      return;
+    }
 
-      const nextPriceRaw = window.prompt('Новая цена за единицу:', currentPrice);
-      if (nextPriceRaw === null) {
-        return;
-      }
+    const startEdit = () => {
+      row.classList.add('is-editing');
+      nameText.classList.add('is-hidden');
+      priceText.classList.add('is-hidden');
+      nameInput.classList.remove('is-hidden');
+      priceInput.classList.remove('is-hidden');
+      editBtn.classList.add('is-hidden');
+      saveBtn.classList.remove('is-hidden');
+      cancelBtn.classList.remove('is-hidden');
+      nameInput.focus();
+    };
 
-      const nextPrice = Number(nextPriceRaw);
-      if (!nextName.trim()) {
+    const stopEdit = () => {
+      row.classList.remove('is-editing');
+      nameText.classList.remove('is-hidden');
+      priceText.classList.remove('is-hidden');
+      nameInput.classList.add('is-hidden');
+      priceInput.classList.add('is-hidden');
+      editBtn.classList.remove('is-hidden');
+      saveBtn.classList.add('is-hidden');
+      cancelBtn.classList.add('is-hidden');
+      nameInput.value = nameText.textContent.trim();
+      priceInput.value = priceText.textContent.trim();
+    };
+
+    editBtn.addEventListener('click', startEdit);
+
+    cancelBtn.addEventListener('click', () => {
+      stopEdit();
+    });
+
+    saveBtn.addEventListener('click', async () => {
+      const nextName = nameInput.value.trim();
+      const nextPrice = Number(priceInput.value);
+
+      if (!nextName) {
         alert('Название не может быть пустым');
         return;
       }
@@ -232,7 +264,7 @@ function initPartEditing() {
 
       try {
         await patchJson(`/api/warehouse/parts/${partId}`, {
-          part_name: nextName.trim(),
+          part_name: nextName,
           unit_price: nextPrice,
         });
       } catch (error) {
@@ -240,7 +272,9 @@ function initPartEditing() {
         return;
       }
 
-      window.location.reload();
+      nameText.textContent = nextName;
+      priceText.textContent = String(nextPrice);
+      stopEdit();
     });
   });
 }

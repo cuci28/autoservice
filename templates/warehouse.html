@@ -50,18 +50,24 @@
         <thead><tr><th>ID</th><th>Запчасть</th><th>Остаток</th><th>Цена</th><th></th></tr></thead>
         <tbody>
           {% for part in parts %}
-          <tr>
+          <tr class="part-row" data-part-id="{{ part.part_id }}">
             <td>{{ part.part_id }}</td>
-            <td>{{ part.part_name }}</td>
+            <td class="part-name-cell">
+              <span class="part-name-text">{{ part.part_name }}</span>
+              <input class="part-name-input is-hidden" type="text" value="{{ part.part_name }}">
+            </td>
             <td>{{ part.stock_quantity }}</td>
-            <td>{{ part.unit_price }}</td>
-            <td>
+            <td class="part-price-cell">
+              <span class="part-price-text">{{ part.unit_price }}</span>
+              <input class="part-price-input is-hidden" type="number" min="1" value="{{ part.unit_price }}">
+            </td>
+            <td class="part-actions">
               <button
-                class="button button-secondary button-small"
+                class="button button-secondary button-small part-edit-btn"
                 data-edit-part="{{ part.part_id }}"
-                data-part-name="{{ part.part_name }}"
-                data-unit-price="{{ part.unit_price }}"
               >Изменить</button>
+              <button class="button button-primary button-small part-save-btn is-hidden">Сохранить</button>
+              <button class="button button-secondary button-small part-cancel-btn is-hidden">Отмена</button>
             </td>
           </tr>
           {% else %}

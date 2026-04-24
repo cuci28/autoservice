@@ -353,6 +353,23 @@ input:focus, select:focus {
 
 .empty-state { text-align: center; padding: 60px 24px; }
 
+.is-hidden { display: none !important; }
+
+.part-row.is-editing {
+  background: rgba(198, 107, 44, 0.08);
+}
+
+.part-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.part-name-cell input,
+.part-price-cell input {
+  min-height: 38px;
+}
+
 @media (max-width: 1180px) {
   .page-shell { grid-template-columns: 1fr; }
   .sidebar { position: static; height: auto; }
