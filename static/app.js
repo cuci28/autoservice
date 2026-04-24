@@ -210,6 +210,11 @@ document.addEventListener('DOMContentLoaded', () => {
     quantity: Number(form.querySelector('[name="quantity"]').value),
   }), () => window.location.reload());
 
+  initSimpleForm('warehouse-writeoff-form', '/api/warehouse/writeoff', (form) => ({
+    part_id: Number(form.querySelector('[name="part_id"]').value),
+    quantity: Number(form.querySelector('[name="quantity"]').value),
+  }), () => window.location.reload());
+
   initOrderForm();
   initMasterDeletion();
 });
