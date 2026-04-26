@@ -56,7 +56,6 @@ def recalculate_order_total(tables, order_id):
     """Пересчитывает стоимость заказа как сумму услуг и запчастей."""
     order_services = tables['order_services']
     order_parts = tables['order_parts']
-    warehouse = tables['warehouse']
     orders = tables['orders']
 
     # Сумма услуг берется из сохраненной цены услуги на момент добавления в заказ.
@@ -66,10 +65,9 @@ def recalculate_order_total(tables, order_id):
         )
     ).scalar_one()
 
-    # Сумма запчастей считается по текущей цене запчасти из склада.
+    # Сумма запчастей считается по цене, зафиксированной в момент заказа.
     parts_total = db.session.execute(
-        select(func.coalesce(func.sum(order_parts.c.quantity * warehouse.c.unit_price), 0))
-        .select_from(order_parts.join(warehouse, order_parts.c.part_id == warehouse.c.part_id))
+        select(func.coalesce(func.sum(order_parts.c.quantity * order_parts.c.price_at_time), 0))
         .where(order_parts.c.order_id == order_id)
     ).scalar_one()
 
@@ -138,8 +136,8 @@ def fetch_order_receipt(tables, order_id):
             order_parts.c.part_id,
             warehouse.c.part_name,
             order_parts.c.quantity,
-            warehouse.c.unit_price,
-            (order_parts.c.quantity * warehouse.c.unit_price).label('line_total'),
+            order_parts.c.price_at_time,
+            (order_parts.c.quantity * order_parts.c.price_at_time).label('line_total'),
         )
         .select_from(order_parts.join(warehouse, order_parts.c.part_id == warehouse.c.part_id))
         .where(order_parts.c.order_id == order_id)
@@ -182,12 +180,21 @@ def add_services_to_order(tables, order_id, services_payload):
 def add_parts_to_order(tables, order_id, parts_payload):
     """Добавляет запчасти в заказ. Остаток уменьшается триггером в БД."""
     order_parts = tables['order_parts']
+    warehouse = tables['warehouse']
     for part_item in parts_payload:
+        part_row = db.session.execute(
+            select(warehouse.c.part_id, warehouse.c.unit_price, warehouse.c.part_name)
+            .where(warehouse.c.part_id == part_item['part_id'])
+        ).mappings().first()
+        if not part_row:
+            raise ValueError(f"Запчасть id={part_item['part_id']} не найдена")
+
         db.session.execute(
             insert(order_parts).values(
                 order_id=order_id,
                 part_id=part_item['part_id'],
                 quantity=int(part_item['quantity']),
+                price_at_time=part_row['unit_price'],
             )
         )
 

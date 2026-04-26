@@ -4,7 +4,7 @@ from flask import Flask
 
 from .api import api
 from .extensions import db
-from .store import init_tables
+from .store import ensure_order_parts_price_at_time_column, init_tables
 from .ui import ui
 
 
@@ -28,6 +28,7 @@ def create_app():
 
     # Загружаем таблицы из существующей БД и сохраняем ссылки в extensions.
     with app.app_context():
+        ensure_order_parts_price_at_time_column()
         app.extensions['autoservice_tables'] = init_tables()
 
     # Регистрируем все API-роуты.
