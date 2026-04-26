@@ -103,6 +103,7 @@ CREATE TABLE order_parts (
     order_id INTEGER,
     part_id INTEGER,
     quantity INTEGER NOT NULL,
+	price_at_time INTEGER,
     FOREIGN KEY (order_id) REFERENCES orders(order_id),
     FOREIGN KEY (part_id) REFERENCES warehouse(part_id)
 );
@@ -139,10 +140,10 @@ insert into orders(car_id, total_cost, master_id) VALUES
 (2, 2000, 2),
 (3, 2800, 3);
 
-INSERT INTO order_parts (order_id, part_id, quantity) VALUES
-(1, 5, 1),
-(1, 1, 1),
-(3, 4, 1);
+INSERT INTO order_parts (order_id, part_id, quantity, price_at_time) VALUES
+(1, 5, 1, 850),
+(1, 1, 1, 3200),
+(3, 4, 1, 1400);
 
 insert into order_services (order_id, service_id, price_at_time) VALUES
 (1, 1, 1000),
