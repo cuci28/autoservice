@@ -1,5 +1,3 @@
-from sqlalchemy import inspect, text
-
 from .extensions import db
 
 # Список таблиц, которые обязаны существовать в базе для корректной работы API.
@@ -39,24 +37,3 @@ def init_tables():
         'order_parts': metadata.tables['order_parts'],
         'order_services': metadata.tables['order_services'],
     }
-
-
-def ensure_order_parts_price_at_time_column():
-    """Добавляет в order_parts колонку цены на момент заказа, если ее еще нет."""
-    inspector = inspect(db.engine)
-    columns = {column['name'] for column in inspector.get_columns('order_parts')}
-    if 'price_at_time' in columns:
-        return
-
-    # Для старой базы добавляем колонку и заполняем ее текущей ценой запчасти.
-    with db.engine.begin() as connection:
-        connection.execute(
-            text('ALTER TABLE order_parts ADD COLUMN price_at_time INTEGER NOT NULL DEFAULT 0')
-        )
-        connection.execute(
-            text(
-                'UPDATE order_parts '
-                'SET price_at_time = COALESCE((SELECT unit_price FROM warehouse WHERE warehouse.part_id = order_parts.part_id), 0) '
-                'WHERE price_at_time = 0'
-            )
-        )
