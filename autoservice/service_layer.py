@@ -190,3 +190,25 @@ def add_parts_to_order(tables, order_id, parts_payload):
                 quantity=int(part_item['quantity']),
             )
         )
+
+
+def restore_order_parts_stock(tables, order_id):
+    """Возвращает на склад все запчасти, списанные в заказе."""
+    order_parts = tables['order_parts']
+    warehouse = tables['warehouse']
+
+    rows = db.session.execute(
+        select(
+            order_parts.c.part_id,
+            func.sum(order_parts.c.quantity).label('quantity_sum'),
+        )
+        .where(order_parts.c.order_id == order_id)
+        .group_by(order_parts.c.part_id)
+    ).mappings().all()
+
+    for row in rows:
+        db.session.execute(
+            update(warehouse)
+            .where(warehouse.c.part_id == row['part_id'])
+            .values(stock_quantity=warehouse.c.stock_quantity + int(row['quantity_sum']))
+        )

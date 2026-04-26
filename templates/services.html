@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block title %}AutoService · Услуги{% endblock %}
+
+{% block content %}
+<section class="page-head">
+  <div>
+    <p class="eyebrow">Услуги</p>
+    <h1>Справочник услуг</h1>
+  </div>
+  <a class="button button-secondary" href="{{ url_for('ui.dashboard') }}">На главную</a>
+</section>
+
+<section class="grid-two">
+  <article class="panel">
+    <h2>Новая услуга</h2>
+    <form id="service-form" class="stack-form" data-success-text="Услуга добавлена">
+      <label>Название услуги<input name="service_name" required></label>
+      <label>Цена<input name="price" type="number" min="1" required></label>
+      <button class="button button-primary" type="submit">Добавить услугу</button>
+      <div class="form-message" data-message></div>
+    </form>
+  </article>
+
+  <article class="panel">
+    <h2>Список услуг</h2>
+    <div class="table-wrap table-wrap--compact">
+      <table>
+        <thead><tr><th>ID</th><th>Услуга</th><th>Цена</th><th></th></tr></thead>
+        <tbody>
+          {% for service in services %}
+          <tr class="service-row" data-service-id="{{ service.service_id }}">
+            <td>{{ service.service_id }}</td>
+            <td class="service-name-cell">
+              <span class="service-name-text">{{ service.service_name }}</span>
+              <input class="service-name-input is-hidden" type="text" value="{{ service.service_name }}">
+            </td>
+            <td class="service-price-cell">
+              <span class="service-price-text">{{ service.price }}</span>
+              <input class="service-price-input is-hidden" type="number" min="1" value="{{ service.price }}">
+            </td>
+            <td class="service-actions">
+              <button class="button button-secondary button-small service-edit-btn">Изменить</button>
+              <button class="button button-primary button-small service-save-btn is-hidden">Сохранить</button>
+              <button class="button button-secondary button-small service-cancel-btn is-hidden">Отмена</button>
+              <button class="button button-danger button-small service-delete-btn">Удалить</button>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="4" class="empty">Услуг пока нет</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </article>
+</section>
+{% endblock %}

@@ -365,8 +365,29 @@ input:focus, select:focus {
   flex-wrap: wrap;
 }
 
+.client-actions,
+.service-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.car-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .part-name-cell input,
-.part-price-cell input {
+.part-price-cell input,
+.client-name-cell input,
+.client-phone-cell input,
+.client-email-cell input,
+.service-name-cell input,
+.service-price-cell input,
+.car-model-cell input,
+.car-year-cell input,
+.car-vin-cell input {
   min-height: 38px;
 }
 

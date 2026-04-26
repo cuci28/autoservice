@@ -34,17 +34,32 @@
     <h2>Клиенты в базе</h2>
     <div class="table-wrap table-wrap--compact">
       <table>
-        <thead><tr><th>ID</th><th>ФИО</th><th>Телефон</th><th>Email</th></tr></thead>
+        <thead><tr><th>ID</th><th>ФИО</th><th>Телефон</th><th>Email</th><th></th></tr></thead>
         <tbody>
           {% for client in clients %}
-          <tr>
+          <tr class="client-row" data-client-id="{{ client.client_id }}">
             <td>{{ client.client_id }}</td>
-            <td>{{ client.full_name }}</td>
-            <td>{{ client.phone_number }}</td>
-            <td>{{ client.email or '—' }}</td>
+            <td class="client-name-cell">
+              <span class="client-name-text">{{ client.full_name }}</span>
+              <input class="client-name-input is-hidden" type="text" value="{{ client.full_name }}">
+            </td>
+            <td class="client-phone-cell">
+              <span class="client-phone-text">{{ client.phone_number }}</span>
+              <input class="client-phone-input is-hidden" type="text" value="{{ client.phone_number }}">
+            </td>
+            <td class="client-email-cell">
+              <span class="client-email-text">{{ client.email or '' }}</span>
+              <input class="client-email-input is-hidden" type="email" value="{{ client.email or '' }}">
+            </td>
+            <td class="client-actions">
+              <button class="button button-secondary button-small client-edit-btn">Изменить</button>
+              <button class="button button-primary button-small client-save-btn is-hidden">Сохранить</button>
+              <button class="button button-secondary button-small client-cancel-btn is-hidden">Отмена</button>
+              <button class="button button-danger button-small client-delete-btn">Удалить</button>
+            </td>
           </tr>
           {% else %}
-          <tr><td colspan="4" class="empty">Клиентов пока нет</td></tr>
+          <tr><td colspan="5" class="empty">Клиентов пока нет</td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -56,18 +71,33 @@
   <h2>Машины клиентов</h2>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ID</th><th>Клиент</th><th>Модель</th><th>Год</th><th>VIN</th></tr></thead>
+      <thead><tr><th>ID</th><th>Клиент</th><th>Модель</th><th>Год</th><th>VIN</th><th></th></tr></thead>
       <tbody>
         {% for car in cars %}
-        <tr>
+        <tr class="car-row" data-car-id="{{ car.car_id }}">
           <td>{{ car.car_id }}</td>
           <td>{{ car.full_name }}</td>
-          <td>{{ car.car_model }}</td>
-          <td>{{ car.year }}</td>
-          <td>{{ car.vin }}</td>
+          <td class="car-model-cell">
+            <span class="car-model-text">{{ car.car_model }}</span>
+            <input class="car-model-input is-hidden" type="text" value="{{ car.car_model }}">
+          </td>
+          <td class="car-year-cell">
+            <span class="car-year-text">{{ car.year }}</span>
+            <input class="car-year-input is-hidden" type="number" value="{{ car.year }}">
+          </td>
+          <td class="car-vin-cell">
+            <span class="car-vin-text">{{ car.vin }}</span>
+            <input class="car-vin-input is-hidden" type="text" maxlength="17" value="{{ car.vin }}">
+          </td>
+          <td class="car-actions">
+            <button class="button button-secondary button-small car-edit-btn">Изменить</button>
+            <button class="button button-primary button-small car-save-btn is-hidden">Сохранить</button>
+            <button class="button button-secondary button-small car-cancel-btn is-hidden">Отмена</button>
+            <button class="button button-danger button-small car-delete-btn">Удалить</button>
+          </td>
         </tr>
         {% else %}
-        <tr><td colspan="5" class="empty">Машин пока нет</td></tr>
+        <tr><td colspan="6" class="empty">Машин пока нет</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -75,6 +75,16 @@ def clients_page():
     return render_template('clients.html', clients=clients, cars=cars)
 
 
+@ui.route('/services')
+def services_page():
+    """Страница управления услугами."""
+    tables = get_tables()
+    services = db.session.execute(
+        select(tables['services']).order_by(desc(tables['services'].c.service_id))
+    ).mappings().all()
+    return render_template('services.html', services=services)
+
+
 @ui.route('/masters')
 def masters_page():
     """Страница управления мастерами."""

@@ -12,6 +12,7 @@ from .service_layer import (
     fetch_order_receipt,
     recalculate_order_total,
     require_fields,
+    restore_order_parts_stock,
 )
 
 # BluePrint объединяет все HTTP-маршруты backend API.
@@ -235,7 +236,27 @@ def update_order_status(order_id):
     if status not in ALLOWED_STATUSES:
         return jsonify({'error': f"Недопустимый статус. Допустимые значения: {', '.join(sorted(ALLOWED_STATUSES))}"}), 400
 
-    with db.session.begin():
+    current_row = db.session.execute(
+        select(
+            tables['orders'].c.order_id,
+            tables['orders'].c.status,
+        ).where(tables['orders'].c.order_id == order_id)
+    ).mappings().first()
+
+    if not current_row:
+        return jsonify({'error': 'Заказ не найден'}), 404
+
+    current_status = current_row['status']
+    if current_status == 'отменен' and status != 'отменен':
+        return jsonify({'error': 'Отмененный заказ нельзя перевести в другой статус'}), 400
+
+    if current_status == 'отменен' and status == 'отменен':
+        return jsonify({'message': 'Статус уже установлен'}), 200
+
+    with db.session.begin_nested():
+        if status == 'отменен' and current_status != 'отменен':
+            restore_order_parts_stock(tables, order_id)
+
         result = db.session.execute(
             update(tables['orders'])
             .where(tables['orders'].c.order_id == order_id)
@@ -246,6 +267,84 @@ def update_order_status(order_id):
         return jsonify({'error': 'Заказ не найден'}), 404
 
     return jsonify({'message': 'Статус обновлен'})
+
+
+@api.route('/api/clients/<int:client_id>', methods=['PATCH'])
+def update_client(client_id):
+    """Обновляет данные клиента."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+
+    values_to_update = {}
+    if 'full_name' in payload:
+        full_name = str(payload.get('full_name', '')).strip()
+        if not full_name:
+            return jsonify({'error': 'ФИО не может быть пустым'}), 400
+        values_to_update['full_name'] = full_name
+
+    if 'phone_number' in payload:
+        phone_number = str(payload.get('phone_number', '')).strip()
+        if not phone_number:
+            return jsonify({'error': 'Телефон не может быть пустым'}), 400
+        values_to_update['phone_number'] = phone_number
+
+    if 'email' in payload:
+        email = payload.get('email')
+        values_to_update['email'] = email.strip() if isinstance(email, str) and email.strip() else None
+
+    if not values_to_update:
+        return jsonify({'error': 'Нужно передать хотя бы одно поле для обновления'}), 400
+
+    try:
+        with db.session.begin():
+            result = db.session.execute(
+                update(tables['clients'])
+                .where(tables['clients'].c.client_id == client_id)
+                .values(**values_to_update)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Клиент не найден'}), 404
+
+    return jsonify({'message': 'Клиент обновлен'})
+
+
+@api.route('/api/clients/<int:client_id>', methods=['DELETE'])
+def delete_client(client_id):
+    """Удаляет клиента, если у него нет зависимых заказов."""
+    tables = get_tables()
+
+    has_orders = db.session.execute(
+        select(tables['orders'].c.order_id)
+        .select_from(
+            tables['orders']
+            .join(tables['cars'], tables['orders'].c.car_id == tables['cars'].c.car_id)
+        )
+        .where(tables['cars'].c.client_id == client_id)
+    ).first()
+
+    if has_orders:
+        return jsonify({'error': 'Нельзя удалить клиента: у него есть заказы'}), 400
+
+    try:
+        with db.session.begin_nested():
+            db.session.execute(
+                delete(tables['cars']).where(tables['cars'].c.client_id == client_id)
+            )
+            result = db.session.execute(
+                delete(tables['clients']).where(tables['clients'].c.client_id == client_id)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нельзя удалить клиента', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Клиент не найден'}), 404
+
+    return jsonify({'message': 'Клиент удален'})
 
 
 @api.route('/api/orders/<int:order_id>/master', methods=['PATCH'])
@@ -432,12 +531,115 @@ def update_part(part_id):
     return jsonify({'message': 'Запчасть обновлена'})
 
 
-@api.route('/api/services', methods=['GET'])
+@api.route('/api/services', methods=['GET', 'POST'])
 def list_services():
-    """Возвращает список услуг."""
+    """Возвращает список услуг или добавляет новую услугу."""
     tables = get_tables()
+
+    if request.method == 'POST':
+        payload = request.get_json(silent=True) or {}
+        ok, error = require_fields(payload, ['service_name', 'price'])
+        if not ok:
+            return jsonify(error), 400
+
+        try:
+            price = int(payload['price'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Цена должна быть числом'}), 400
+
+        if price <= 0:
+            return jsonify({'error': 'Цена должна быть больше нуля'}), 400
+
+        try:
+            with db.session.begin():
+                result = db.session.execute(
+                    insert(tables['services']).values(
+                        service_name=payload['service_name'].strip(),
+                        price=price,
+                    )
+                )
+                service_id = result.inserted_primary_key[0]
+        except IntegrityError as ex:
+            db.session.rollback()
+            return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+        return jsonify({'message': 'Услуга добавлена', 'service_id': service_id}), 201
+
     rows = db.session.execute(select(tables['services'])).mappings().all()
     return jsonify([dict(row) for row in rows])
+
+
+@api.route('/api/services/<int:service_id>', methods=['PATCH'])
+def update_service(service_id):
+    """Обновляет название и/или цену услуги."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+
+    service_name = payload.get('service_name')
+    price = payload.get('price')
+
+    if service_name is None and price is None:
+        return jsonify({'error': 'Нужно передать service_name и/или price'}), 400
+
+    values_to_update = {}
+    if service_name is not None:
+        cleaned_name = str(service_name).strip()
+        if not cleaned_name:
+            return jsonify({'error': 'Название услуги не может быть пустым'}), 400
+        values_to_update['service_name'] = cleaned_name
+
+    if price is not None:
+        try:
+            parsed_price = int(price)
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Цена должна быть числом'}), 400
+        if parsed_price <= 0:
+            return jsonify({'error': 'Цена должна быть больше нуля'}), 400
+        values_to_update['price'] = parsed_price
+
+    try:
+        with db.session.begin():
+            result = db.session.execute(
+                update(tables['services'])
+                .where(tables['services'].c.service_id == service_id)
+                .values(**values_to_update)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Услуга не найдена'}), 404
+
+    return jsonify({'message': 'Услуга обновлена'})
+
+
+@api.route('/api/services/<int:service_id>', methods=['DELETE'])
+def delete_service(service_id):
+    """Удаляет услугу, если она не использовалась в заказах."""
+    tables = get_tables()
+
+    used_in_orders = db.session.execute(
+        select(tables['order_services'].c.order_id)
+        .where(tables['order_services'].c.service_id == service_id)
+    ).first()
+
+    if used_in_orders:
+        return jsonify({'error': 'Нельзя удалить услугу: она используется в заказах'}), 400
+
+    try:
+        with db.session.begin_nested():
+            result = db.session.execute(
+                delete(tables['services']).where(tables['services'].c.service_id == service_id)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нельзя удалить услугу', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Услуга не найдена'}), 404
+
+    return jsonify({'message': 'Услуга удалена'})
 
 
 @api.route('/api/cars', methods=['GET'])
@@ -446,6 +648,83 @@ def list_cars():
     tables = get_tables()
     rows = db.session.execute(select(tables['cars'])).mappings().all()
     return jsonify([dict(row) for row in rows])
+
+
+@api.route('/api/cars/<int:car_id>', methods=['PATCH'])
+def update_car(car_id):
+    """Обновляет данные автомобиля."""
+    tables = get_tables()
+    payload = request.get_json(silent=True) or {}
+
+    values_to_update = {}
+
+    if 'car_model' in payload:
+        car_model = str(payload.get('car_model', '')).strip()
+        if not car_model:
+            return jsonify({'error': 'Модель автомобиля не может быть пустой'}), 400
+        values_to_update['car_model'] = car_model
+
+    if 'year' in payload:
+        try:
+            year = int(payload['year'])
+        except (TypeError, ValueError):
+            return jsonify({'error': 'Год должен быть числом'}), 400
+        if year <= 0:
+            return jsonify({'error': 'Год должен быть больше нуля'}), 400
+        values_to_update['year'] = year
+
+    if 'vin' in payload:
+        vin = str(payload.get('vin', '')).strip()
+        if not vin:
+            return jsonify({'error': 'VIN не может быть пустым'}), 400
+        values_to_update['vin'] = vin
+
+    if not values_to_update:
+        return jsonify({'error': 'Нужно передать хотя бы одно поле для обновления'}), 400
+
+    try:
+        with db.session.begin_nested():
+            result = db.session.execute(
+                update(tables['cars'])
+                .where(tables['cars'].c.car_id == car_id)
+                .values(**values_to_update)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нарушение ограничений БД', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Автомобиль не найден'}), 404
+
+    return jsonify({'message': 'Автомобиль обновлен'})
+
+
+@api.route('/api/cars/<int:car_id>', methods=['DELETE'])
+def delete_car(car_id):
+    """Удаляет автомобиль, если он не используется в заказах."""
+    tables = get_tables()
+
+    has_orders = db.session.execute(
+        select(tables['orders'].c.order_id)
+        .where(tables['orders'].c.car_id == car_id)
+    ).first()
+
+    if has_orders:
+        return jsonify({'error': 'Нельзя удалить автомобиль: у него есть заказы'}), 400
+
+    try:
+        with db.session.begin_nested():
+            result = db.session.execute(
+                delete(tables['cars']).where(tables['cars'].c.car_id == car_id)
+            )
+    except IntegrityError as ex:
+        db.session.rollback()
+        return jsonify({'error': 'Нельзя удалить автомобиль', 'details': str(ex.orig)}), 400
+
+    if result.rowcount == 0:
+        return jsonify({'error': 'Автомобиль не найден'}), 404
+
+    return jsonify({'message': 'Автомобиль удален'})
 
 
 @api.route('/api/orders/<int:order_id>', methods=['GET'])
